@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de Áudio</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <button id="recordButton" class="btn">
+                <span class="record-icon"></span>
+                Gravar
+            </button>
+            <button id="playButton" class="btn">
+                <span class="play-icon"></span>
+                Play
+            </button>
+            <button id="stopButton" class="btn">
+                <span class="stop-icon"></span>
+                Stop
+            </button>
+            <button id="cutButton" class="btn">
+                <span class="cut-icon"></span>
+                Cortar
+            </button>
+            <button id="deleteButton" class="btn">
+                <span class="delete-icon"></span>
+                Remover
+            </button>
+        </div>
+        <div class="toolbar-group">
+            <button id="saveButton" class="btn btn-secondary">
+                <span class="save-icon"></span>
+                Salvar Projeto
+            </button>
+            <button id="loadButton" class="btn btn-secondary">
+                <span class="load-icon"></span>
+                Carregar Projeto
+            </button>
+            <button id="exportButton" class="btn btn-primary">
+                <span class="export-icon"></span>
+                Exportar WAV
+            </button>
+        </div>
+    </div>
+
+    <div class="timeline-container">
+        <canvas id="timeline"></canvas>
+    </div>
+
+    <div id="projectList" class="project-list">
+        <h3>Projetos Salvos</h3>
+        <div class="project-items"></div>
+    </div>
+
+    <script type="module" src="audioEngine.js"></script>
+    <script type="module" src="timelineRenderer.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html> 
