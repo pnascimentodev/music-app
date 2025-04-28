@@ -107,12 +107,21 @@ class AudioEngine {
         this.isPlaying = true;
         this.isPaused = false;
         this.startTime = this.audioContext.currentTime - startFrom;
+        this._tracksStarted = new Set();
+        this._playbackInterval = setInterval(() => this._checkAndStartTracks(), 30);
+        this._lastPlayheadTime = startFrom;
+    }
 
+    _checkAndStartTracks() {
+        if (!this.isPlaying) return;
+        const playhead = (this.audioContext.currentTime - this.startTime);
         this.tracks.forEach((track, index) => {
-            if (startFrom < track.startTime + track.buffer.duration) {
-                this.playTrack(index, startFrom);
+            if (!this._tracksStarted.has(index) && playhead >= track.startTime && playhead < track.startTime + track.buffer.duration) {
+                this.playTrack(index, playhead);
+                this._tracksStarted.add(index);
             }
         });
+        this._lastPlayheadTime = playhead;
     }
 
     pauseAll() {
@@ -139,7 +148,8 @@ class AudioEngine {
         this.isPlaying = false;
         this.isPaused = false;
         this.pausedAt = 0;
-            
+        if (this._playbackInterval) clearInterval(this._playbackInterval);
+        this._tracksStarted = new Set();
         this.tracks.forEach(track => {
             if (track.source) {
                 track.source.stop();
@@ -382,6 +392,15 @@ class AudioEngine {
     setMasterVolume(volume) {
         if (volume >= 0 && volume <= 1) {
             this.masterGainNode.gain.value = volume;
+        }
+    }
+
+    deleteTrack(trackIndex) {
+        if (trackIndex >= 0 && trackIndex < this.tracks.length) {
+            this.tracks.splice(trackIndex, 1);
+            if (this.onTrackAdded) {
+                this.onTrackAdded(this.tracks.length - 1);
+            }
         }
     }
 }

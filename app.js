@@ -265,4 +265,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initialize project list
     updateProjectList();
+
+    // Add classes to buttons
+    saveButton.classList.add('save-btn');
+    loadButton.classList.add('load-btn');
+    exportButton.classList.add('export-btn');
 }); 

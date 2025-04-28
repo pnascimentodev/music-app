@@ -35,14 +35,10 @@ class TimelineRenderer {
     }
 
     setupCanvas() {
-        const updateCanvasSize = () => {
-            const rect = this.canvas.parentElement.getBoundingClientRect();
-            this.canvas.width = rect.width;
-            this.canvas.height = rect.height;
-        };
-
-        window.addEventListener('resize', updateCanvasSize);
-        updateCanvasSize();
+        const rect = this.canvas.parentElement.getBoundingClientRect();
+        this.canvas.width = rect.width;
+        // Altura dinâmica baseada no número de tracks, sem limitar pelo container
+        this.canvas.height = Math.max(400, this.audioEngine.tracks.length * (this.trackHeight + this.trackGap));
     }
 
     setupEventListeners() {
@@ -55,28 +51,58 @@ class TimelineRenderer {
     handleMouseDown(e) {
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
         
-        // Check if click is near the playhead (within 5 pixels)
+        // Verificar se clicou no playhead
         const playheadX = this.timeToX(this.currentTime);
         if (Math.abs(x - playheadX) <= 5) {
             this.isDraggingPlayhead = true;
+            this.dragStartX = x;
+            this.dragStartTime = this.currentTime;
             return;
         }
         
-        this.isDragging = true;
+        // Verificar se clicou em uma track
+        const trackIndex = this.findTrackAtPosition(x, y);
+        if (trackIndex !== null) {
+            const track = this.audioEngine.tracks[trackIndex];
+            const trackX = this.timeToX(track.startTime);
+            const trackWidth = this.timeToX(track.buffer.duration);
+            
+            // Verificar se o clique foi dentro da área da track
+            if (x >= trackX && x <= trackX + trackWidth) {
+                this.selectedTrackIndex = trackIndex;
+                this.isDragging = true;
+                this.dragStartX = x;
+                this.dragStartY = y;
+                this.dragStartTime = track.startTime;
+                this.render();
+            }
+        }
     }
 
     handleMouseMove(e) {
-        if (!this.isDragging && !this.isDraggingPlayhead) return;
-
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
         
         if (this.isDraggingPlayhead) {
-            this.currentTime = this.xToTime(x);
+            const deltaX = x - this.dragStartX;
+            const deltaTime = this.xToTime(deltaX);
+            this.currentTime = this.dragStartTime + deltaTime;
+            
             if (this.onTimeUpdate) {
                 this.onTimeUpdate(this.currentTime);
             }
+            this.render();
+        } else if (this.isDragging && this.selectedTrackIndex !== null) {
+            const track = this.audioEngine.tracks[this.selectedTrackIndex];
+            const deltaX = x - this.dragStartX;
+            const deltaTime = this.xToTime(deltaX);
+            const newStartTime = this.dragStartTime + deltaTime;
+            
+            // Permitir movimentação para trás
+            this.audioEngine.moveTrack(this.selectedTrackIndex, newStartTime);
             this.render();
         }
     }
@@ -84,6 +110,7 @@ class TimelineRenderer {
     handleMouseUp() {
         this.isDragging = false;
         this.isDraggingPlayhead = false;
+        this.render();
     }
 
     handleClick(e) {
@@ -118,15 +145,11 @@ class TimelineRenderer {
     }
 
     timeToX(time) {
-        // Calcular a duração total considerando todas as faixas
-        const totalDuration = this.getTotalDuration();
-        return (time / totalDuration) * this.canvas.width;
+        return time * this.pixelsPerSecond;
     }
 
     xToTime(x) {
-        const totalDuration = this.getTotalDuration();
-        const time = (x / this.canvas.width) * totalDuration;
-        return Math.max(0, Math.min(time, totalDuration));
+        return x / this.pixelsPerSecond;
     }
 
     getTotalDuration() {
@@ -167,6 +190,8 @@ class TimelineRenderer {
     }
 
     render() {
+        // Atualizar altura do canvas dinamicamente
+        this.setupCanvas();
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
         // Draw grid
@@ -253,63 +278,87 @@ class TimelineRenderer {
     }
 
     drawTracks() {
-        // Sair se não há tracks
-        if (!this.audioEngine.tracks || this.audioEngine.tracks.length === 0) {
-            return;
-        }
-        
-        console.log('Drawing tracks:', this.audioEngine.tracks.length);
-        
         const trackHeight = this.trackHeight;
         const trackGap = this.trackGap;
-        
-        this.audioEngine.tracks.forEach((track, index) => {
-            // Garantir que temos waveformData para todos os tracks
-            if (!track.waveformData) {
-                track.waveformData = this.generateWaveformData(track.buffer);
-            }
+        const cornerRadius = 8;
 
-            // Calcular a posição e tamanho da track na linha do tempo
-            const trackDuration = track.buffer ? track.buffer.duration : 0;
+        this.audioEngine.tracks.forEach((track, index) => {
+            const y = index * (trackHeight + trackGap);
+            const trackColor = this.trackColors[index % this.trackColors.length];
             const trackX = this.timeToX(track.startTime);
-            const trackWidth = (trackDuration / this.getTotalDuration()) * this.canvas.width;
-            const trackY = index * (trackHeight + trackGap);
+            const trackWidth = this.timeToX(track.buffer.duration);
             
-            // Draw track background
-            this.ctx.fillStyle = index === this.selectedTrackIndex ? '#4a4a4a' : '#2a2a2a';
-            this.ctx.fillRect(trackX, trackY, trackWidth, trackHeight);
+            // Desenhar separador entre tracks
+            if (index > 0) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, y - trackGap/2);
+                this.ctx.lineTo(this.canvas.width, y - trackGap/2);
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                this.ctx.lineWidth = 1;
+                this.ctx.stroke();
+            }
             
-            // Draw track name or index
+            // Desenhar nome da track
             this.ctx.fillStyle = '#ffffff';
             this.ctx.font = '12px Arial';
             this.ctx.textAlign = 'left';
-            this.ctx.fillText(`Track ${index + 1}`, trackX + 5, trackY + 15);
+            this.ctx.fillText(`Track ${index + 1}`, 10, y + 20);
             
-            // Draw waveform if available
-            if (track.waveformData) {
-                this.ctx.strokeStyle = this.trackColors[index % this.trackColors.length];
-                this.ctx.lineWidth = 1;
+            // Desenhar fundo da track
+            this.ctx.beginPath();
+            this.ctx.moveTo(trackX + cornerRadius, y);
+            this.ctx.lineTo(trackX + trackWidth - cornerRadius, y);
+            this.ctx.quadraticCurveTo(trackX + trackWidth, y, trackX + trackWidth, y + cornerRadius);
+            this.ctx.lineTo(trackX + trackWidth, y + trackHeight - cornerRadius);
+            this.ctx.quadraticCurveTo(trackX + trackWidth, y + trackHeight, trackX + trackWidth - cornerRadius, y + trackHeight);
+            this.ctx.lineTo(trackX + cornerRadius, y + trackHeight);
+            this.ctx.quadraticCurveTo(trackX, y + trackHeight, trackX, y + trackHeight - cornerRadius);
+            this.ctx.lineTo(trackX, y + cornerRadius);
+            this.ctx.quadraticCurveTo(trackX, y, trackX + cornerRadius, y);
+            this.ctx.closePath();
+            
+            // Preencher com cor e gradiente
+            const gradient = this.ctx.createLinearGradient(trackX, y, trackX, y + trackHeight);
+            gradient.addColorStop(0, trackColor + '80');
+            gradient.addColorStop(1, trackColor + '40');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fill();
+            
+            // Borda da track
+            this.ctx.strokeStyle = trackColor;
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+
+            // Desenhar waveform
+            if (track.buffer) {
+                const waveformData = this.generateWaveformData(track.buffer);
+                
                 this.ctx.beginPath();
+                this.ctx.strokeStyle = '#ffffff';
+                this.ctx.lineWidth = 1;
                 
-                const stepSize = track.waveformData.length / trackWidth;
-                
-                for (let i = 0; i < trackWidth; i++) {
-                    const waveformIndex = Math.floor(i * stepSize);
-                    if (waveformIndex < track.waveformData.length) {
-                        const amplitude = track.waveformData[waveformIndex] * (trackHeight / 2);
-                        
-                        const x = trackX + i;
-                        const y = trackY + (trackHeight / 2);
-                        
-                        if (i === 0) {
-                            this.ctx.moveTo(x, y - amplitude);
-                        } else {
-                            this.ctx.lineTo(x, y - amplitude);
-                        }
+                for (let i = 0; i < waveformData.length; i++) {
+                    const x = trackX + (i / waveformData.length) * trackWidth;
+                    const amplitude = waveformData[i] * (trackHeight / 2);
+                    const yCenter = y + trackHeight / 2;
+                    
+                    if (i === 0) {
+                        this.ctx.moveTo(x, yCenter - amplitude);
+                    } else {
+                        this.ctx.lineTo(x, yCenter - amplitude);
                     }
                 }
                 
-                this.ctx.stroke();
+                for (let i = waveformData.length - 1; i >= 0; i--) {
+                    const x = trackX + (i / waveformData.length) * trackWidth;
+                    const amplitude = waveformData[i] * (trackHeight / 2);
+                    const yCenter = y + trackHeight / 2;
+                    this.ctx.lineTo(x, yCenter + amplitude);
+                }
+                
+                this.ctx.closePath();
+                this.ctx.fillStyle = trackColor + '40';
+                this.ctx.fill();
             }
         });
     }

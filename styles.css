@@ -1,11 +1,11 @@
 :root {
     --primary-color: #2196f3;
     --secondary-color: #1976d2;
-    --background-color: #1e1e1e;
-    --toolbar-bg: #2d2d2d;
+    --background-color: #121212;
+    --toolbar-bg: #1e1e1e;
     --track-colors: #2196f3, #4caf50, #f44336, #ff9800, #9c27b0;
     --text-color: #ffffff;
-    --grid-color: #3d3d3d;
+    --grid-color: #2d2d2d;
 }
 
 * {
@@ -25,12 +25,14 @@ body {
 .toolbar {
     background-color: var(--toolbar-bg);
     padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     margin-bottom: 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .toolbar-group {
@@ -38,52 +40,93 @@ body {
     gap: 10px;
 }
 
-.btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
+.toolbar button, .controls button {
+    padding: 12px 24px;
+    margin: 0 5px;
     border: none;
-    border-radius: 4px;
-    background-color: var(--primary-color);
-    color: white;
+    border-radius: 12px;
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+    color: #fff;
     cursor: pointer;
     font-size: 14px;
-    transition: all 0.2s;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
 }
 
-.btn:hover {
-    background-color: var(--secondary-color);
-    transform: translateY(-1px);
+.toolbar button::before, .controls button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, rgba(255,255,255,0.1), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
 }
 
-.btn.active {
-    background-color: #f44336;
+.toolbar button:hover::before, .controls button:hover::before {
+    transform: translateX(100%);
 }
 
-.btn span {
+.toolbar button:hover, .controls button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+}
+
+.toolbar button.active, .controls button.active {
+    background: linear-gradient(145deg, #4a4a4a, #3a3a3a);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.toolbar button.recording, .controls button.recording {
+    background: linear-gradient(145deg, #ff4444, #cc0000);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 15px rgba(255, 68, 68, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 68, 68, 0);
+    }
+}
+
+.toolbar button span, .controls button span {
     display: inline-block;
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
 }
 
-.btn-secondary {
-    background-color: var(--toolbar-bg);
-    border: 1px solid var(--primary-color);
-    color: var(--primary-color);
+.record-icon {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ffffff"><circle cx="12" cy="12" r="10"/></svg>');
 }
 
-.btn-secondary:hover {
-    background-color: var(--primary-color);
-    color: white;
+.play-icon {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ffffff"><path d="M8 5v14l11-7z"/></svg>');
 }
 
-.btn-primary {
-    background-color: #4caf50;
+.pause-icon {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ffffff"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>');
 }
 
-.btn-primary:hover {
-    background-color: #388e3c;
+.cut-icon {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ffffff"><path d="M9.64 7.64c.23-.5.36-1.05.36-1.64 0-2.21-1.79-4-4-4S2 3.79 2 6s1.79 4 4 4c.59 0 1.14-.13 1.64-.36L10 12l-2.36 2.36C7.14 14.13 6.59 14 6 14c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4c0-.59-.13-1.14-.36-1.64L12 14l7 7h3v-1L9.64 7.64zM6 8c-1.1 0-2-.89-2-2s.9-2 2-2 2 .89 2 2-.9 2-2 2zm0 12c-1.1 0-2-.89-2-2s.9-2 2-2 2 .89 2 2-.9 2-2 2zm6-7.5c-.28 0-.5-.22-.5-.5s.22-.5.5-.5.5.22.5.5-.22.5-.5.5zM19 3l-6 6 2 2 7-7V3z"/></svg>');
 }
 
 .project-list {
@@ -154,21 +197,54 @@ body {
     border-top: 4px solid currentColor;
 }
 
+.toolbar button span.save-icon,
+.toolbar button span.load-icon,
+.toolbar button span.export-icon {
+    width: 20px;
+    height: 20px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    display: inline-block;
+    margin-right: 8px;
+}
+
 .timeline-container {
     position: relative;
     background-color: var(--toolbar-bg);
-    border-radius: 8px;
+    border-radius: 12px;
     padding: 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    user-select: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    height: 500px;
+    max-height: 70vh;
+    min-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #2196f3 #181818;
+}
+
+.timeline-container::-webkit-scrollbar {
+    width: 10px;
+}
+.timeline-container::-webkit-scrollbar-thumb {
+    background: #2196f3;
+    border-radius: 8px;
+}
+.timeline-container::-webkit-scrollbar-track {
+    background: #181818;
+    border-radius: 8px;
 }
 
 #timeline {
     width: 100%;
-    height: 400px;
+    min-height: 400px;
     background-color: var(--background-color);
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
+    position: relative;
+    display: block;
 }
 
 #timeline.cutting {
@@ -183,19 +259,21 @@ body {
     background-color: #ff0000;
     pointer-events: none;
     z-index: 2;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
 }
 
 .playhead::after {
     content: '';
     position: absolute;
     top: 0;
-    left: -4px;
-    width: 10px;
-    height: 10px;
+    left: -6px;
+    width: 14px;
+    height: 14px;
     background-color: #ff0000;
     border-radius: 50%;
     cursor: col-resize;
     pointer-events: auto;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
 }
 
 .playhead-area {
@@ -206,90 +284,74 @@ body {
     height: 30px;
     cursor: col-resize;
     background-color: rgba(255, 255, 255, 0.05);
-}
-
-.record-icon {
-    background-color: #f44336;
-    border-radius: 50%;
-}
-
-.recording .record-icon {
-    animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-    0% {
-        transform: scale(1);
-        opacity: 1;
-    }
-    50% {
-        transform: scale(1.2);
-        opacity: 0.8;
-    }
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-
-.play-icon {
-    width: 0 !important;
-    height: 0 !important;
-    border-style: solid;
-    border-width: 8px 0 8px 12px;
-    border-color: transparent transparent transparent #ffffff;
-}
-
-.pause-icon {
-    width: 12px !important;
-    height: 14px !important;
-    position: relative;
-    display: flex !important;
-    justify-content: space-between;
-}
-
-.pause-icon::before,
-.pause-icon::after {
-    content: '';
-    width: 4px;
-    height: 100%;
-    background-color: #ffffff;
-    display: block;
-}
-
-.stop-icon {
-    background-color: #ffffff;
-    width: 12px !important;
-    height: 12px !important;
-}
-
-.cut-icon {
-    position: relative;
-}
-
-.cut-icon::before,
-.cut-icon::after {
-    content: '';
-    position: absolute;
-    width: 12px;
-    height: 2px;
-    background-color: #ffffff;
-    transform: rotate(45deg);
-    top: 7px;
-    left: 2px;
-}
-
-.cut-icon::after {
-    transform: rotate(-45deg);
+    z-index: 1;
 }
 
 .track-label {
     position: absolute;
-    left: 10px;
-    color: var(--text-color);
-    font-size: 12px;
+    left: 24px;
+    top: 12px;
+    color: #fff;
+    font-size: 15px;
     font-weight: bold;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    background: rgba(33, 150, 243, 0.18);
+    padding: 6px 18px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(33,150,243,0.10);
+    z-index: 3;
+    letter-spacing: 1px;
+    border-left: 4px solid var(--primary-color);
+    text-shadow: 0 2px 8px #0008;
+}
+
+.track-separator {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #2196f3 40%, #2196f3 60%, transparent);
+    box-shadow: 0 2px 8px #2196f355;
+    z-index: 1;
+}
+
+.track-container {
+    position: relative;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 20px;
+}
+
+.track-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 0 10px;
+}
+
+.track-name {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.track-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.track-controls button {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.track-controls button:hover {
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .time-markers {
@@ -328,4 +390,28 @@ body {
 .track-selected {
     outline: 2px solid var(--primary-color);
     outline-offset: -2px;
+}
+
+.toolbar button.save-btn {
+    background: linear-gradient(145deg, #2196f3, #1976d2);
+    color: #fff;
+}
+.toolbar button.save-btn:hover {
+    background: linear-gradient(145deg, #1976d2, #2196f3);
+}
+
+.toolbar button.load-btn {
+    background: linear-gradient(145deg, #9c27b0, #673ab7);
+    color: #fff;
+}
+.toolbar button.load-btn:hover {
+    background: linear-gradient(145deg, #673ab7, #9c27b0);
+}
+
+.toolbar button.export-btn {
+    background: linear-gradient(145deg, #4caf50, #388e3c);
+    color: #fff;
+}
+.toolbar button.export-btn:hover {
+    background: linear-gradient(145deg, #388e3c, #4caf50);
 } 
